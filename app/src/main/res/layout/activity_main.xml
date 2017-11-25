@@ -25,7 +25,7 @@
             android:textSize="18sp" />
 
         <TextView
-            android:id="@+id/txt_spp"
+            android:id="@+id/text_spp"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:text="TextView" />
