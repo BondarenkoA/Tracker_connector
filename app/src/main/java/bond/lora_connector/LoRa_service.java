@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.RemoteException;
 
 import bond.lora_connector.logger.Log;
 
@@ -25,11 +26,39 @@ public class LoRa_service extends Service {
 
     Messenger mClient;
 
+    final tracker_handler m_tracker_handler = new tracker_handler();
+
+    private BT_tracker m_BT_tracker = new BT_tracker(m_tracker_handler);
+
     static final int MSG_REGISTER_CLIENT = 1; //register a client
     static final int MSG_STOP_SERVICE = 2;
     static final int MSG_STR_TO_TRACKER = 3;
     static final int MSG_STR_FROM_TRACKER = 4;
     static final int MSG_SET_TRACKER_BT_ADR = 5;
+
+    /**
+     * Handler of messages from host-tracker.
+     */
+    class tracker_handler extends Handler {
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case constants.MESSAGE_READ:
+                    Log.i(TAG, "MESSAGE_READ");
+                    try {
+                        Message out_msg = Message.obtain(null, LoRa_service.MSG_STR_FROM_TRACKER, msg.obj);
+                        mClient.send(out_msg);
+                    } catch (RemoteException e) {
+                        // There is nothing special we need to do if the service has crashed.
+                    }
+                    break;
+
+                default:
+                    super.handleMessage(msg);
+            }
+        }
+    }
+
+
 
     /**
      * Handler of incoming messages from clients.
@@ -41,6 +70,14 @@ public class LoRa_service extends Service {
                 case MSG_REGISTER_CLIENT:
                     Log.i(TAG, "MSG_REGISTER_CLIENT");
                     mClient  = msg.replyTo;
+
+                    try {
+                        Message out_msg = Message.obtain(null, LoRa_service.MSG_STR_FROM_TRACKER, new String("Клиент подключен!\n"));
+                        mClient.send(out_msg);
+                    } catch (RemoteException e) {
+                        // There is nothing special we need to do if the service has crashed.
+                    }
+
                     break;
                 case MSG_STOP_SERVICE:
                     Log.i(TAG, "MSG_STOP_SERVICE");
@@ -94,6 +131,13 @@ public class LoRa_service extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "Service: onStartCommand");
+
+
+        if(m_BT_tracker.getState() != BT_tracker.STATE_CONNECTED){
+            m_BT_tracker.set_BT_address("30:14:09:30:11:18");
+            m_BT_tracker.connect();
+        }
+
         return START_STICKY;
     }
 

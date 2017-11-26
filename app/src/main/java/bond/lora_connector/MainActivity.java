@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
             switch (msg.what) {
                 case LoRa_service.MSG_STR_FROM_TRACKER:
                     Log.i(TAG, "MSG_STR_FROM_TRACKER");
-                    m_text_spp.setText("Received from service: " + msg.arg1);
+                    m_text_spp.append((String)msg.obj);
                     break;
                 default:
                     super.handleMessage(msg);
@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
             Log.i(TAG, "onServiceConnected");
 
             mService = new Messenger(service);
-            m_text_status.setText("Attached.");
+            m_text_status.append("Attached.\n");
             // We want to monitor the service for as long as we are
             // connected to it.
             try {
@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
             Log.i(TAG, "onServiceDisconnected");
 
             mService = null;
-            m_text_status.setText("Disconnected.");
+            m_text_status.append("Disconnected.\n");
             // As part of the sample, tell the user what happened.
             Toast.makeText(getApplicationContext(), "remote_service_disconnected", Toast.LENGTH_SHORT).show();
         }
@@ -133,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
         bindService(new Intent(this,
                 LoRa_service.class), mConnection, Context.BIND_AUTO_CREATE);
         mIsBound = true;
-        m_text_status.setText("Binding...");
+        m_text_status.append("Binding...\n");
     }
 
     void doStopService() {
@@ -147,7 +147,6 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     Message msg = Message.obtain(null,
                             LoRa_service.MSG_STOP_SERVICE);
-                    msg.replyTo = mMessenger;
                     mService.send(msg);
                 } catch (RemoteException e) {
                     // There is nothing special we need to do if the service
@@ -158,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
             // Detach our existing connection.
             unbindService(mConnection);
             mIsBound = false;
-            m_text_status.setText("Service Stoping...");
+            m_text_status.append("Service Stoping...\n");
         }
     }
 
@@ -173,8 +172,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         m_text_status = (TextView) findViewById(R.id.text_status);
-        m_text_status.setText("Start");
+        m_text_status.setMovementMethod(new ScrollingMovementMethod());
+        m_text_status.append("Start\n");
+
         m_text_spp = (TextView) findViewById(R.id.text_spp);
+        m_text_spp.setMovementMethod(new ScrollingMovementMethod());
 
         m_btn_svc = (Switch) findViewById(R.id.btn_toggle_srvc);
 
@@ -185,12 +187,12 @@ public class MainActivity extends AppCompatActivity {
                 //TextView text_status = (TextView) findViewById(R.id.text_status);
 
                 if(m_btn_svc.isChecked()) {
-                    m_text_status.setText("Start Service...");
+                    m_text_status.append("Start Service...\n");
                     m_btn_svc.setText("Остановить службу");
                     doBindService();
                 }
                 else {
-                    m_text_status.setText("Stop Service...");
+                    m_text_status.append("Stop Service...\n");
                     m_btn_svc.setText("Запустить службу");
                     doStopService();
                 }

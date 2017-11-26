@@ -21,26 +21,7 @@ import bond.lora_connector.logger.Log;
 
 public class BT_tracker {
     // Debugging
-    private static final String TAG = "BluetoothChatService";
-
-    public interface Constants {
-
-        // Message types sent from the BluetoothChatService Handler
-        public static final int MESSAGE_STATE_CHANGE = 1;
-        public static final int MESSAGE_READ = 2;
-        public static final int MESSAGE_WRITE = 3;
-        public static final int MESSAGE_DEVICE_NAME = 4;
-        public static final int MESSAGE_TOAST = 5;
-
-        // Key names received from the BluetoothChatService Handler
-        public static final String DEVICE_NAME = "device_name";
-        public static final String TOAST = "toast";
-
-    }
-
-    // Name for the SDP record when creating server socket
-    private static final String NAME_SECURE = "BluetoothChatSecure";
-    private static final String NAME_INSECURE = "BluetoothChatInsecure";
+    private static final String TAG = "BT_tracker";
 
     // Unique UUID for this application
     private static final UUID SPP_UUID_STANDARD =
@@ -48,9 +29,11 @@ public class BT_tracker {
 
     // Member fields
     private final BluetoothAdapter mAdapter;
-    private final Handler mHandler;
+    private String m_bt_address = "";
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
+    private final Handler mHandler;
+
     private int mState;
     private int mNewState;
 
@@ -64,28 +47,19 @@ public class BT_tracker {
     /**
      * Constructor. Prepares a new BluetoothChat session.
      *
-     * @param context The UI Activity Context
-     * @param handler A Handler to send messages back to the UI Activity
      */
-    public BT_tracker(Context context, Handler handler) {
+    public BT_tracker(Handler handler) {
         mAdapter = BluetoothAdapter.getDefaultAdapter();
         mState = STATE_NONE;
         mNewState = mState;
+
         mHandler = handler;
     }
 
-    /**
-     * Update UI title according to the current state of the chat connection
-     */
-    private synchronized void updateUserInterfaceTitle() {
-        mState = getState();
-        Log.d(TAG, "updateUserInterfaceTitle() " + mNewState + " -> " + mState);
-        mNewState = mState;
-
-        // Give the new state to the Handler so the UI Activity can update
-        mHandler.obtainMessage(Constants.MESSAGE_STATE_CHANGE, mNewState, -1).sendToTarget();
+    public void set_BT_address(String addr){
+        Log.d(TAG, "set_BT_address: " + addr);
+        m_bt_address = addr;
     }
-
     /**
      * Return the current connection state.
      */
@@ -112,17 +86,14 @@ public class BT_tracker {
             mConnectedThread = null;
         }
 
-        updateUserInterfaceTitle();
     }
 
     /**
      * Start the ConnectThread to initiate a connection to a remote device.
      *
-     * @param device The BluetoothDevice to connect
-     * @param secure Socket Security type - Secure (true) , Insecure (false)
      */
-    public synchronized void connect(BluetoothDevice device, boolean secure) {
-        Log.d(TAG, "connect to: " + device);
+    public synchronized void connect() {
+        Log.d(TAG, "connect");
 
         // Cancel any thread attempting to make a connection
         if (mState == STATE_CONNECTING) {
@@ -139,10 +110,8 @@ public class BT_tracker {
         }
 
         // Start the thread to connect with the given device
-        mConnectThread = new ConnectThread(device, secure);
+        mConnectThread = new ConnectThread();
         mConnectThread.start();
-        // Update UI title
-        updateUserInterfaceTitle();
     }
 
     /**
@@ -151,9 +120,8 @@ public class BT_tracker {
      * @param socket The BluetoothSocket on which the connection was made
      * @param device The BluetoothDevice that has been connected
      */
-    public synchronized void connected(BluetoothSocket socket, BluetoothDevice
-            device, final String socketType) {
-        Log.d(TAG, "connected, Socket Type:" + socketType);
+    public synchronized void connected(BluetoothSocket socket, BluetoothDevice device) {
+        Log.d(TAG, "connected, Socket Type");
 
         // Cancel the thread that completed the connection
         if (mConnectThread != null) {
@@ -168,17 +136,10 @@ public class BT_tracker {
         }
 
         // Start the thread to manage the connection and perform transmissions
-        mConnectedThread = new ConnectedThread(socket, socketType);
+        mConnectedThread = new ConnectedThread(socket);
         mConnectedThread.start();
 
-        // Send the name of the connected device back to the UI Activity
-        Message msg = mHandler.obtainMessage(Constants.MESSAGE_DEVICE_NAME);
-        Bundle bundle = new Bundle();
-        bundle.putString(Constants.DEVICE_NAME, device.getName());
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
-        // Update UI title
-        updateUserInterfaceTitle();
+        //TODO: отправить сообщение в гуй. И поменять иконку службы.
     }
 
     /**
@@ -198,8 +159,6 @@ public class BT_tracker {
         }
 
         mState = STATE_NONE;
-        // Update UI title
-        updateUserInterfaceTitle();
     }
 
     /**
@@ -225,15 +184,11 @@ public class BT_tracker {
      */
     private void connectionFailed() {
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(Constants.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(Constants.TOAST, "Unable to connect device");
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
+        Log.i(TAG, "connectionFailed to: " + m_bt_address);
+
+        //TODO: отправить сообщение в гуй. И поменять иконку службы.
 
         mState = STATE_NONE;
-        // Update UI title
-        updateUserInterfaceTitle();
 
         // Start the service over to restart listening mode
         BT_tracker.this.start();
@@ -244,15 +199,13 @@ public class BT_tracker {
      */
     private void connectionLost() {
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(Constants.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(Constants.TOAST, "Device connection was lost");
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
+        Log.i(TAG, "connectionLost");
+
+        //TODO: отправить сообщение в гуй. И поменять иконку службы.
+        //bundle.putString(Constants.TOAST, "Device connection was lost");
+
 
         mState = STATE_NONE;
-        // Update UI title
-        updateUserInterfaceTitle();
 
         // Start the service over to restart listening mode
         BT_tracker.this.start();
@@ -265,35 +218,30 @@ public class BT_tracker {
      * succeeds or fails.
      */
     private class ConnectThread extends Thread {
-        private final BluetoothSocket mmSocket;
+        private BluetoothSocket mmSocket = null;
         private final BluetoothDevice mmDevice;
-        private String mSocketType;
 
-        public ConnectThread(BluetoothDevice device, boolean secure) {
-            mmDevice = device;
-            BluetoothSocket tmp = null;
-            mSocketType = secure ? "Secure" : "Insecure";
+        public ConnectThread() {
+            mmDevice = mAdapter.getRemoteDevice(m_bt_address);
 
-            // Get a BluetoothSocket for a connection with the
-            // given BluetoothDevice
             try {
-                if (secure) {
-                    tmp = device.createRfcommSocketToServiceRecord(
-                            SPP_UUID_STANDARD);
-                } else {
-                    tmp = device.createInsecureRfcommSocketToServiceRecord(
-                            SPP_UUID_STANDARD);
-                }
+                mmSocket =   mmDevice.createRfcommSocketToServiceRecord(SPP_UUID_STANDARD);
             } catch (IOException e) {
-                Log.e(TAG, "Socket Type: " + mSocketType + "create() failed", e);
+                Log.e(TAG, "Socket create() failed", e);
             }
-            mmSocket = tmp;
-            mState = STATE_CONNECTING;
+
+            mState = STATE_NONE;
         }
 
         public void run() {
-            Log.i(TAG, "BEGIN mConnectThread SocketType:" + mSocketType);
-            setName("ConnectThread" + mSocketType);
+            Log.i(TAG, "BEGIN mConnectThread");
+            setName("ConnectThread");
+
+            if(mmSocket == null){
+                Log.i(TAG, "Break mConnectThread due socket fail");
+                mHandler.obtainMessage(constants.MESSAGE_READ, new String("Bluetooth выключен!\n")).sendToTarget();
+                return;
+            }
 
             // Always cancel discovery because it will slow down a connection
             mAdapter.cancelDiscovery();
@@ -308,8 +256,7 @@ public class BT_tracker {
                 try {
                     mmSocket.close();
                 } catch (IOException e2) {
-                    Log.e(TAG, "unable to close() " + mSocketType +
-                            " socket during connection failure", e2);
+                    Log.e(TAG, "unable to close() socket during connection failure", e2);
                 }
                 connectionFailed();
                 return;
@@ -321,14 +268,14 @@ public class BT_tracker {
             }
 
             // Start the connected thread
-            connected(mmSocket, mmDevice, mSocketType);
+            connected(mmSocket, mmDevice);
         }
 
         public void cancel() {
             try {
                 mmSocket.close();
             } catch (IOException e) {
-                Log.e(TAG, "close() of connect " + mSocketType + " socket failed", e);
+                Log.e(TAG, "close() of connect socket failed", e);
             }
         }
     }
@@ -342,8 +289,8 @@ public class BT_tracker {
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
 
-        public ConnectedThread(BluetoothSocket socket, String socketType) {
-            Log.d(TAG, "create ConnectedThread: " + socketType);
+        public ConnectedThread(BluetoothSocket socket) {
+            Log.d(TAG, "create ConnectedThread");
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
@@ -372,9 +319,8 @@ public class BT_tracker {
                     // Read from the InputStream
                     bytes = mmInStream.read(buffer);
 
-                    // Send the obtained bytes to the UI Activity
-                    mHandler.obtainMessage(Constants.MESSAGE_READ, bytes, -1, new String(buffer, 0, bytes))
-                            .sendToTarget();
+                    mHandler.obtainMessage(constants.MESSAGE_READ, new String(buffer, 0, bytes)).sendToTarget();
+
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     connectionLost();
@@ -392,9 +338,9 @@ public class BT_tracker {
             try {
                 mmOutStream.write(buffer);
 
-                // Share the sent message back to the UI Activity
-                mHandler.obtainMessage(Constants.MESSAGE_WRITE, -1, -1, buffer)
-                        .sendToTarget();
+                //TODO: отправить сообщение в гуй.
+                //mHandler.obtainMessage(Constants.MESSAGE_WRITE, -1, -1, buffer)
+
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);
             }
