@@ -30,11 +30,7 @@ public class LoRa_service extends Service {
 
     private BT_tracker m_BT_tracker = new BT_tracker(m_tracker_handler);
 
-    static final int MSG_REGISTER_CLIENT = 1; //register a client
-    static final int MSG_STOP_SERVICE = 2;
-    static final int MSG_STR_TO_TRACKER = 3;
-    static final int MSG_STR_FROM_TRACKER = 4;
-    static final int MSG_SET_TRACKER_BT_ADR = 5;
+
 
     /**
      * Handler of messages from host-tracker.
@@ -42,14 +38,28 @@ public class LoRa_service extends Service {
     class tracker_handler extends Handler {
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case constants.MESSAGE_READ:
+                case MSG.STR_FROM_TRACKER:
                     Log.i(TAG, "MESSAGE_READ");
+                    if(mClient != null) {
+                        try {
+                            Message out_msg = Message.obtain(null, MSG.STR_FROM_TRACKER, msg.obj);
+                            mClient.send(out_msg);
+                        } catch (RemoteException e) {
+                            // There is nothing special we need to do if the service has crashed.
+                        }
+                    }
+                    break;
+                case MSG.BT_IS_OFF:
+                case MSG.BT_IS_ON:
+                case MSG.TRACKER_NOT_CONNECTED:
+                case MSG.TRACKER_CONNECTED:
                     try {
-                        Message out_msg = Message.obtain(null, LoRa_service.MSG_STR_FROM_TRACKER, msg.obj);
+                        Message out_msg = Message.obtain(msg);
                         mClient.send(out_msg);
                     } catch (RemoteException e) {
                         // There is nothing special we need to do if the service has crashed.
                     }
+
                     break;
 
                 default:
@@ -67,36 +77,30 @@ public class LoRa_service extends Service {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case MSG_REGISTER_CLIENT:
+                case MSG.REGISTER_CLIENT:
                     Log.i(TAG, "MSG_REGISTER_CLIENT");
                     mClient  = msg.replyTo;
 
                     try {
-                        Message out_msg = Message.obtain(null, LoRa_service.MSG_STR_FROM_TRACKER, new String("Клиент подключен!\n"));
+                        Message out_msg = Message.obtain(null, MSG.STR_FROM_TRACKER, new String("Клиент подключен!\n"));
                         mClient.send(out_msg);
                     } catch (RemoteException e) {
                         // There is nothing special we need to do if the service has crashed.
                     }
 
+                    if(m_BT_tracker.getState() != BT_tracker.STATE_CONNECTED){
+                        m_BT_tracker.set_BT_address("30:14:09:30:11:18");
+                        m_BT_tracker.connect();
+                    }
+
                     break;
-                case MSG_STOP_SERVICE:
+                case MSG.STOP_SERVICE:
                     Log.i(TAG, "MSG_STOP_SERVICE");
+
+                    m_BT_tracker.stop();
                     stopSelf();
                     break;
-                /*case MSG_SET_VALUE:
-                    mValue = msg.arg1;
-                    for (int i=mClients.size()-1; i>=0; i--) {
-                        try {
-                            mClients.get(i).send(Message.obtain(null,
-                                    MSG_SET_VALUE, mValue, 0));
-                        } catch (RemoteException e) {
-                            // The client is dead.  Remove it from the list;
-                            // we are going through the list from back to front
-                            // so this is safe to do inside the loop.
-                            mClients.remove(i);
-                        }
-                    }
-                    break;*/
+
                 default:
                     super.handleMessage(msg);
             }
@@ -131,12 +135,6 @@ public class LoRa_service extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "Service: onStartCommand");
-
-
-        if(m_BT_tracker.getState() != BT_tracker.STATE_CONNECTED){
-            m_BT_tracker.set_BT_address("30:14:09:30:11:18");
-            m_BT_tracker.connect();
-        }
 
         return START_STICKY;
     }

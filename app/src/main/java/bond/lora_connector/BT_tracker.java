@@ -3,10 +3,7 @@ package bond.lora_connector;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
-import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -110,8 +107,19 @@ public class BT_tracker {
         }
 
         // Start the thread to connect with the given device
-        mConnectThread = new ConnectThread();
+        try {
+            mConnectThread = new ConnectThread();
+        } catch (IOException e) {
+            Log.e(TAG, "Socket create() failed", e);
+            mHandler.obtainMessage(MSG.BT_IS_OFF).sendToTarget();
+
+            return;
+        }
+
+        mHandler.obtainMessage(MSG.BT_IS_ON).sendToTarget();
         mConnectThread.start();
+
+
     }
 
     /**
@@ -186,7 +194,7 @@ public class BT_tracker {
         // Send a failure message back to the Activity
         Log.i(TAG, "connectionFailed to: " + m_bt_address);
 
-        //TODO: отправить сообщение в гуй. И поменять иконку службы.
+        mHandler.obtainMessage(MSG.TRACKER_NOT_CONNECTED).sendToTarget();
 
         mState = STATE_NONE;
 
@@ -221,14 +229,10 @@ public class BT_tracker {
         private BluetoothSocket mmSocket = null;
         private final BluetoothDevice mmDevice;
 
-        public ConnectThread() {
+        public ConnectThread() throws IOException {
             mmDevice = mAdapter.getRemoteDevice(m_bt_address);
 
-            try {
-                mmSocket =   mmDevice.createRfcommSocketToServiceRecord(SPP_UUID_STANDARD);
-            } catch (IOException e) {
-                Log.e(TAG, "Socket create() failed", e);
-            }
+            mmSocket =  mmDevice.createRfcommSocketToServiceRecord(SPP_UUID_STANDARD);
 
             mState = STATE_NONE;
         }
@@ -236,12 +240,6 @@ public class BT_tracker {
         public void run() {
             Log.i(TAG, "BEGIN mConnectThread");
             setName("ConnectThread");
-
-            if(mmSocket == null){
-                Log.i(TAG, "Break mConnectThread due socket fail");
-                mHandler.obtainMessage(constants.MESSAGE_READ, new String("Bluetooth выключен!\n")).sendToTarget();
-                return;
-            }
 
             // Always cancel discovery because it will slow down a connection
             mAdapter.cancelDiscovery();
@@ -306,6 +304,8 @@ public class BT_tracker {
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
             mState = STATE_CONNECTED;
+
+            mHandler.obtainMessage(MSG.TRACKER_CONNECTED).sendToTarget();
         }
 
         public void run() {
@@ -319,7 +319,7 @@ public class BT_tracker {
                     // Read from the InputStream
                     bytes = mmInStream.read(buffer);
 
-                    mHandler.obtainMessage(constants.MESSAGE_READ, new String(buffer, 0, bytes)).sendToTarget();
+                    mHandler.obtainMessage(MSG.STR_FROM_TRACKER, new String(buffer, 0, bytes)).sendToTarget();
 
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);

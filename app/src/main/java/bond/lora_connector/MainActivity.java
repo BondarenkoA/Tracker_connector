@@ -45,9 +45,25 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case LoRa_service.MSG_STR_FROM_TRACKER:
-                    Log.i(TAG, "MSG_STR_FROM_TRACKER");
+                case MSG.STR_FROM_TRACKER:
+                    Log.i(TAG, "MSG.STR_FROM_TRACKER");
                     m_text_spp.append((String)msg.obj);
+                    break;
+                case MSG.BT_IS_OFF:
+                    Log.i(TAG, "MSG.BT_IS_OFF");
+                    m_text_status.append("Bluetooth выключен\n");
+                    break;
+                case MSG.BT_IS_ON:
+                    Log.i(TAG, "MSG.BT_IS_ON");
+                    m_text_status.append("Bluetooth включен\n");
+                    break;
+                case MSG.TRACKER_NOT_CONNECTED:
+                    Log.i(TAG, "MSG.TRACKER_NOT_CONNECTED");
+                    m_text_status.append("Нет соединения с трекером\n");
+                    break;
+                case MSG.TRACKER_CONNECTED:
+                    Log.i(TAG, "MSG.TRACKER_CONNECTED");
+                    m_text_status.append("Трекер подключен\n");
                     break;
                 default:
                     super.handleMessage(msg);
@@ -79,8 +95,7 @@ public class MainActivity extends AppCompatActivity {
             // We want to monitor the service for as long as we are
             // connected to it.
             try {
-                Message msg = Message.obtain(null,
-                        LoRa_service.MSG_REGISTER_CLIENT);
+                Message msg = Message.obtain(null, MSG.REGISTER_CLIENT);
                 msg.replyTo = mMessenger;
                 mService.send(msg);
 
@@ -144,13 +159,14 @@ public class MainActivity extends AppCompatActivity {
             // If we have received the service, and hence registered with
             // it, then now is the time to unregister.
             if (mService != null) {
+
+                //if (mIsBound) unbindService(mConnection);
+
                 try {
-                    Message msg = Message.obtain(null,
-                            LoRa_service.MSG_STOP_SERVICE);
+                    Message msg = Message.obtain(null, MSG.STOP_SERVICE);
                     mService.send(msg);
                 } catch (RemoteException e) {
-                    // There is nothing special we need to do if the service
-                    // has crashed.
+                    // There is nothing special we need to do if the service has crashed.
                 }
             }
 
