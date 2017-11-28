@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package bond.lora_connector.logger;
+package bond.xxxx_connector.logger;
 
 /**
  * Helper class for a list (or tree) of LoggerNodes.

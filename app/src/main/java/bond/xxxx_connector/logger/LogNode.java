@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package bond.lora_connector.logger;
+package bond.xxxx_connector.logger;
 
 /**
  * Basic interface for a logging system that can output to one or more targets.

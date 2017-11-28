@@ -1,4 +1,4 @@
-package bond.lora_connector;
+package bond.xxxx_connector;
 
 import android.app.ActivityManager;
 import android.content.ComponentName;
@@ -14,15 +14,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
-import bond.lora_connector.logger.Log;
-import bond.lora_connector.logger.LogWrapper;
+import bond.xxxx_connector.R;
+import bond.xxxx_connector.logger.Log;
+import bond.xxxx_connector.logger.LogWrapper;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -143,10 +141,10 @@ public class MainActivity extends AppCompatActivity {
 
         Log.i(TAG, "doBindService");
 
-        startService(new Intent(this, LoRa_service.class));
+        startService(new Intent(this, xxxx_service.class));
 
         bindService(new Intent(this,
-                LoRa_service.class), mConnection, Context.BIND_AUTO_CREATE);
+                xxxx_service.class), mConnection, Context.BIND_AUTO_CREATE);
         mIsBound = true;
         m_text_status.append("Binding...\n");
     }
@@ -216,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        m_btn_svc.setChecked(isMyServiceRunning(LoRa_service.class));
+        m_btn_svc.setChecked(isMyServiceRunning(xxxx_service.class));
 
     };
 

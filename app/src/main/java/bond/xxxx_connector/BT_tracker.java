@@ -1,4 +1,4 @@
-package bond.lora_connector;
+package bond.xxxx_connector;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -10,7 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.UUID;
 
-import bond.lora_connector.logger.Log;
+import bond.xxxx_connector.logger.Log;
 
 /**
  * Created by bond on 25.11.2017.

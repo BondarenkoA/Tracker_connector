@@ -1,4 +1,4 @@
-package bond.lora_connector;
+package bond.xxxx_connector;
 
 /**
  * Created by bond on 26.11.2017.

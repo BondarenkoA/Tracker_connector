@@ -29,7 +29,7 @@
  * limitations under the License.
  */
 
-package bond.lora_connector.logger;
+package bond.xxxx_connector.logger;
 
 import android.graphics.Typeface;
 import android.os.Bundle;

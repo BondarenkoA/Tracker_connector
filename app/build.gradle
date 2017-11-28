@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 26
     defaultConfig {
-        applicationId "bond.lora_connector"
+        applicationId "bond.xxxx_connector"
         minSdkVersion 14
         targetSdkVersion 26
         versionCode 1

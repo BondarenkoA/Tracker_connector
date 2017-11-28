@@ -1,4 +1,4 @@
-package bond.lora_connector;
+package bond.xxxx_connector;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -11,16 +11,16 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 
-import bond.lora_connector.logger.Log;
+import bond.xxxx_connector.logger.Log;
 
 /**
  * Created by bond on 24.11.2017.
  * Служба для связи с трекером по блютус, и передачей данных в андрозик
  */
 
-public class LoRa_service extends Service {
+public class xxxx_service extends Service {
 
-    private static final String TAG = "LoRa_service";
+    private static final String TAG = "xxxx_service";
 
     NotificationManager mNM;
 
@@ -122,7 +122,7 @@ public class LoRa_service extends Service {
         Log.i(TAG, "Service: onCreate");
 
         Notification.Builder builder = new Notification.Builder(this)
-                .setSmallIcon(R.drawable.ic_lora_notif_38);
+                .setSmallIcon(R.drawable.ic_xxxx_notif_38);
         Notification notification;
         if (Build.VERSION.SDK_INT < 16)
             notification = builder.getNotification();
